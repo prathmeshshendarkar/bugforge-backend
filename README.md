@@ -3,7 +3,7 @@
 *Version 1.0 · Prepared for Development Team*
 
 ## **Watch The Demo Video**
-[![Watch the video](https://i.ytimg.com/vi/q026EfhzqcE/hqdefault.jpg?sqp=-oaymwFBCNACELwBSFryq4qpAzMIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB8AEB-AH-CYAC0AWKAgwIABABGGUgZShlMA8=&rs=AOn4CLArXiVddkftGhQZv__ZEz8H7V8ncA)]([https://youtu.be/VIDEO_ID](https://www.youtube.com/watch?v=q026EfhzqcE))
+[![Watch the video](https://i.ytimg.com/vi/q026EfhzqcE/hqdefault.jpg?sqp=-oaymwFBCNACELwBSFryq4qpAzMIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB8AEB-AH-CYAC0AWKAgwIABABGGUgZShlMA8=&rs=AOn4CLArXiVddkftGhQZv__ZEz8H7V8ncA)](https://www.youtube.com/watch?v=q026EfhzqcE)
 
 ---
 
