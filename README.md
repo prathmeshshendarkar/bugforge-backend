@@ -1,2 +1,27 @@
-# bugforge-backend
-BugForge is a real-time collaborative issue &amp; project management system, optimized for development teams who want the speed of Linear, the simplicity of Trello, and the power of Jira—without the clutter. (Backend Code)
+# **BugForge — Product Specification Document**
+
+*Version 1.0 · Prepared for Development Team*
+
+---
+
+## **Overview**
+
+BugForge is a **real-time collaborative issue & project management system**, optimized for development teams who want the speed of Linear, the simplicity of Trello, and the power of Jira—without the clutter.
+
+BugForge focuses on:
+
+- Real-time board interactions
+- Fast keyboard-driven workflows
+- Clean UX
+- Developer-first features
+- AI-assisted productivity
+
+---
+
+## **Product Goals**
+
+- Provide a **fast, intuitive Kanban-style issue tracker** for software teams.
+- Enable **real-time collaboration** using WebSockets.
+- Offer **power features** (labels, checklists, relations, comments) without complexity.
+- Build a **scalable backend** (Go + Postgres + WS).
+- Deliver **AI-powered enhancements** that feel useful, not gimmicky.
