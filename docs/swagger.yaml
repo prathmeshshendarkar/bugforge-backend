@@ -1,0 +1,86 @@
+basePath: /api
+definitions:
+  controllers.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  controllers.createIssueReq:
+    properties:
+      assigned_to:
+        type: string
+      description:
+        type: string
+      priority:
+        type: string
+      project_id:
+        type: string
+      title:
+        type: string
+    type: object
+info:
+  contact:
+    email: dev@bugforge.com
+    name: BugForge Developers
+  description: Powerful Issue Tracking Backend for BugForge SaaS
+  title: BugForge API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      parameters:
+      - description: Login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.LoginRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login
+      tags:
+      - Auth
+  /issues:
+    post:
+      parameters:
+      - description: Issue data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.createIssueReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new issue
+      tags:
+      - Issues
+  /projects:
+    get:
+      description: Returns all projects for the authenticated customer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all projects
+      tags:
+      - Projects
+swagger: "2.0"
