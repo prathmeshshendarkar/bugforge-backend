@@ -138,4 +138,16 @@ func (pc *ProjectControllerImpl) GetBySlug(c *fiber.Ctx) error {
 	return helpers.Success(c, proj)
 }
 
+func (c *ProjectControllerImpl) GetProjectActivity(ctx *fiber.Ctx) error {
+
+    customerID := ctx.Locals("customer_id").(string)
+    projectID := ctx.Params("project_id")
+
+    activities, err := c.projectService.ListProjectActivity(ctx.Context(), customerID, projectID)
+    if err != nil {
+        return helpers.Error(ctx, 400, err.Error())
+    }
+
+    return helpers.Success(ctx, activities)
+}
 

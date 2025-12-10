@@ -78,45 +78,54 @@ func (s *ProjectMemberServiceImpl) Invite(
     var userID string
 
     if user == nil {
-        // ----------- User does not exist → Create pending user -----------
-        tempUser := &models.User{
-            ID:               uuid.NewString(),
-            CustomerID:       customerID,
-            Email:            email,
-            Role:             role,
-            IsPending:        true, // NEW FIELD
-        }
+		// Create pending user
+		tempUser := &models.User{
+			ID:         uuid.NewString(),
+			CustomerID: customerID,
+			Email:      email,
+			Role:       role,
+			IsPending:  true,
+		}
 
-        if err := s.userRepo.CreatePending(ctx, tempUser); err != nil {
-            return err
-        }
+		// ---- Generate username FROM EMAIL ----
+		base := helpers.GenerateUsername(email)
+		username := base
 
-        // Generate invite token
-        token := uuid.NewString()
+		i := 1
+		for {
+			existing, _ := s.userRepo.GetByUsername(ctx, username)
+			if existing == nil {
+				break
+			}
+			username = fmt.Sprintf("%s%d", base, i)
+			i++
+		}
 
-        if err := s.userRepo.SaveInviteToken(ctx, tempUser.ID, token); err != nil {
-            return err
-        }
+		tempUser.Username = username
 
-        // Send email async or log for now
-        fmt.Println("SEND INVITE EMAIL TO:", email, "TOKEN:", token)
+		// Insert pending user
+		if err := s.userRepo.CreatePending(ctx, tempUser); err != nil {
+			return err
+		}
 
-		inviteURL := fmt.Sprintf(
-			"%s/accept-invite?token=%s",
+		// Save invite token
+		token := uuid.NewString()
+		if err := s.userRepo.SaveInviteToken(ctx, tempUser.ID, token); err != nil {
+			return err
+		}
+
+		inviteURL := fmt.Sprintf("%s/accept-invite?token=%s",
 			os.Getenv("FRONTEND_URL"),
 			token,
 		)
 
-		fmt.Println(inviteURL);
-		
 		helpers.SendEmail(email,
 			"You're invited to join a project",
-			fmt.Sprintf("Click the link to activate your account: %s", inviteURL),
+			fmt.Sprintf("Click to activate your account: %s", inviteURL),
 		)
 
-
-        userID = tempUser.ID
-    } else {
+		userID = tempUser.ID
+	} else {
         // ----------- User exists -----------
         if user.CustomerID != customerID {
             return errors.New("email belongs to another customer")

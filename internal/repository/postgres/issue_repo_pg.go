@@ -241,10 +241,20 @@ func (r *IssueRepoPG) DeleteComment(ctx context.Context, id string) error {
 
 func (r *IssueRepoPG) ListCommentsByIssue(ctx context.Context, issueID string) ([]models.IssueComment, error) {
 	query := `
-		SELECT id, issue_id, user_id, body, created_at
-		FROM issue_comments
-		WHERE issue_id=$1
-		ORDER BY created_at ASC
+		SELECT 
+			c.id,
+			c.issue_id,
+			c.user_id,
+			c.body,
+			c.body_html,
+			c.created_at,
+			c.updated_at,
+			u.name AS author_name,
+			u.email AS author_email
+		FROM issue_comments c
+		LEFT JOIN users u ON u.id = c.user_id
+		WHERE c.issue_id = $1
+		ORDER BY c.created_at ASC;
 	`
 
 	rows, err := r.db.Query(ctx, query, issueID)
@@ -254,12 +264,26 @@ func (r *IssueRepoPG) ListCommentsByIssue(ctx context.Context, issueID string) (
 	defer rows.Close()
 
 	var out []models.IssueComment
+
 	for rows.Next() {
 		var c models.IssueComment
-		err := rows.Scan(&c.ID, &c.IssueID, &c.UserID, &c.Body, &c.CreatedAt)
+
+		err := rows.Scan(
+			&c.ID,
+			&c.IssueID,
+			&c.UserID,
+			&c.Body,
+			&c.BodyHTML,
+			&c.CreatedAt,
+			&c.UpdatedAt,
+			&c.AuthorName,
+			&c.AuthorEmail,
+		)
+
 		if err != nil {
 			return nil, err
 		}
+
 		out = append(out, c)
 	}
 

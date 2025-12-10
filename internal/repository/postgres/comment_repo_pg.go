@@ -21,13 +21,33 @@ func (r *CommentRepoPG) Create(ctx context.Context, c *models.IssueComment) erro
 	if c.ID == "" {
 		c.ID = uuid.NewString()
 	}
-	_, err := r.db.Exec(ctx, `INSERT INTO issue_comments (id, issue_id, user_id, body, created_at) VALUES ($1,$2,$3,$4,NOW())`,
-		c.ID, c.IssueID, c.UserID, c.Body)
+	_, err := r.db.Exec(ctx,
+		`INSERT INTO issue_comments (id, issue_id, user_id, body, body_html, created_at)
+		VALUES ($1,$2,$3,$4,$5,NOW())`,
+		c.ID, c.IssueID, c.UserID, c.Body, c.BodyHTML,
+	)
+
 	return err
 }
 
-func (r *CommentRepoPG) ListByIssue(ctx context.Context, issueID string) ([]models.IssueComment, error) {
-	rows, err := r.db.Query(ctx, `SELECT id, issue_id, user_id, body, created_at FROM issue_comments WHERE issue_id = $1 ORDER BY created_at ASC`, issueID)
+func (r *CommentRepoPG) ListCommentsByIssue(ctx context.Context, issueID string) ([]models.IssueComment, error) {
+	rows, err := r.db.Query(ctx,
+		`SELECT 
+			c.id,
+			c.issue_id,
+			c.user_id,
+			c.body,
+			c.body_html,
+			c.created_at,
+			c.updated_at,
+			u.name AS author_name,
+			u.email AS author_email
+		FROM issue_comments c
+		LEFT JOIN users u ON u.id = c.user_id
+		WHERE c.issue_id = $1
+		ORDER BY c.created_at ASC;`,
+		issueID,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -36,10 +56,30 @@ func (r *CommentRepoPG) ListByIssue(ctx context.Context, issueID string) ([]mode
 	var out []models.IssueComment
 	for rows.Next() {
 		var c models.IssueComment
-		if err := rows.Scan(&c.ID, &c.IssueID, &c.UserID, &c.Body, &c.CreatedAt); err != nil {
+		if err := rows.Scan(
+			&c.ID,
+			&c.IssueID,
+			&c.UserID,
+			&c.Body,
+			&c.BodyHTML,
+			&c.CreatedAt,
+			&c.UpdatedAt,
+			&c.AuthorName,
+			&c.AuthorEmail,
+		); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
 	}
 	return out, nil
+}
+
+func (r *CommentRepoPG) Update(ctx context.Context, c *models.IssueComment) error {
+    _, err := r.db.Exec(ctx,
+        `UPDATE issue_comments
+         SET body = $1, body_html = $2, updated_at = NOW()
+         WHERE id = $3`,
+        c.Body, c.BodyHTML, c.ID,
+    )
+    return err
 }

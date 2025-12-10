@@ -11,4 +11,5 @@ type ProjectService interface {
     GetProjectByID(ctx context.Context, id, customerID string) (*models.Project, error)
     UpdateProject(ctx context.Context, id, customerID, name, slug string) (*models.Project, error)
     DeleteProject(ctx context.Context, id, customerID string) error
+    ListProjectActivity(ctx context.Context, customerID, projectID string) ([]models.IssueActivity, error)
 }

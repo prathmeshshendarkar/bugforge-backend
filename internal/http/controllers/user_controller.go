@@ -19,44 +19,65 @@ func NewUserController(us service.UserService) controller.UserController {
 
 // DTOs
 type CreateUserRequest struct {
-	Name              string   `json:"name"`
-	Email             string   `json:"email"`
-	Password          string   `json:"password"`
-	Role              string   `json:"role"`
-	AssignedProjectIDs []string `json:"assigned_project_ids"`
-	DefaultProjectID  *string  `json:"default_project_id"`
+    Name               string   `json:"name"`
+    Email              string   `json:"email"`
+    Username           *string  `json:"username"`  // ← OPTIONAL
+    Password           string   `json:"password"`
+    Role               string   `json:"role"`
+    AssignedProjectIDs []string `json:"assigned_project_ids"`
+    DefaultProjectID   *string  `json:"default_project_id"`
 }
 
 type UpdateUserRequest struct {
-	Name              *string  `json:"name"`
-	Email             *string  `json:"email"`
-	Password          *string  `json:"password"`
-	Role              *string  `json:"role"`
-	AssignedProjectIDs []string `json:"assigned_project_ids"`
-	DefaultProjectID  *string  `json:"default_project_id"`
+    Name              *string  `json:"name"`
+    Email             *string  `json:"email"`
+    Username          *string  `json:"username"`  // ← ADD THIS
+    Password          *string  `json:"password"`
+    Role              *string  `json:"role"`
+    AssignedProjectIDs []string `json:"assigned_project_ids"`
+    DefaultProjectID  *string  `json:"default_project_id"`
 }
 
 // Create user (super_admin scoped)
 func (uc *UserControllerImpl) CreateUser(c *fiber.Ctx) error {
-	customerID := c.Locals("customer_id")
-	if customerID == nil {
-		return helpers.Error(c, fiber.StatusUnauthorized, "Unauthorized")
-	}
+    customerID := c.Locals("customer_id")
+    if customerID == nil {
+        return helpers.Error(c, fiber.StatusUnauthorized, "Unauthorized")
+    }
 
-	var body CreateUserRequest
-	if err := c.BodyParser(&body); err != nil {
-		return helpers.Error(c, fiber.StatusBadRequest, "Invalid request")
-	}
+    var body CreateUserRequest
+    if err := c.BodyParser(&body); err != nil {
+        return helpers.Error(c, fiber.StatusBadRequest, "Invalid request")
+    }
 
-	u, err := uc.userService.CreateUser(context.Background(), customerID.(string), body.Name, body.Email, body.Password, body.Role, body.AssignedProjectIDs, body.DefaultProjectID)
-	if err != nil {
-		return helpers.Error(c, fiber.StatusBadRequest, err.Error())
-	}
+    // Optional username
+    var username string
+    if body.Username != nil {
+        username = *body.Username
+    } else {
+        username = "" // let service auto-generate
+    }
 
-	// hide password hash from response
-	u.PasswordHash = helpers.StrPtr("")
-	return helpers.Success(c, u)
+    u, err := uc.userService.CreateUser(
+        context.Background(),
+        customerID.(string),
+        body.Name,
+        body.Email,
+        username,                // ← PASS USERNAME TO SERVICE
+        body.Password,
+        body.Role,
+        body.AssignedProjectIDs,
+        body.DefaultProjectID,
+    )
+
+    if err != nil {
+        return helpers.Error(c, fiber.StatusBadRequest, err.Error())
+    }
+
+    u.PasswordHash = helpers.StrPtr("")
+    return helpers.Success(c, u)
 }
+
 
 func (uc *UserControllerImpl) GetUser(c *fiber.Ctx) error {
 	id := c.Params("id")
@@ -96,39 +117,55 @@ func (uc *UserControllerImpl) GetAllUsers(c *fiber.Ctx) error {
 }
 
 func (uc *UserControllerImpl) UpdateUser(c *fiber.Ctx) error {
-	id := c.Params("id")
-	customerID := c.Locals("customer_id")
-	if customerID == nil {
-		return helpers.Error(c, fiber.StatusUnauthorized, "Unauthorized")
-	}
+    id := c.Params("id")
+    customerID := c.Locals("customer_id")
+    if customerID == nil {
+        return helpers.Error(c, fiber.StatusUnauthorized, "Unauthorized")
+    }
 
-	var body UpdateUserRequest
-	if err := c.BodyParser(&body); err != nil {
-		return helpers.Error(c, fiber.StatusBadRequest, "Invalid request")
-	}
+    var body UpdateUserRequest
+    if err := c.BodyParser(&body); err != nil {
+        return helpers.Error(c, fiber.StatusBadRequest, "Invalid request")
+    }
 
-	// pull values safely
-	var name, email, password, role string
-	if body.Name != nil {
-		name = *body.Name
-	}
-	if body.Email != nil {
-		email = *body.Email
-	}
-	if body.Password != nil {
-		password = *body.Password
-	}
-	if body.Role != nil {
-		role = *body.Role
-	}
+    // Extract optional fields safely
+    var name, email, username, password, role string
 
-	u, err := uc.userService.UpdateUser(context.Background(), id, customerID.(string), name, email, password, role, body.AssignedProjectIDs, body.DefaultProjectID)
-	if err != nil {
-		return helpers.Error(c, fiber.StatusBadRequest, err.Error())
-	}
+    if body.Name != nil {
+        name = *body.Name
+    }
+    if body.Email != nil {
+        email = *body.Email
+    }
+    if body.Username != nil {
+        username = *body.Username
+    }
+    if body.Password != nil {
+        password = *body.Password
+    }
+    if body.Role != nil {
+        role = *body.Role
+    }
 
-	u.PasswordHash = helpers.StrPtr("")
-	return helpers.Success(c, u)
+    u, err := uc.userService.UpdateUser(
+        context.Background(),
+        id,
+        customerID.(string),
+        name,
+        email,
+        username,               
+        password,
+        role,
+        body.AssignedProjectIDs,
+        body.DefaultProjectID,
+    )
+
+    if err != nil {
+        return helpers.Error(c, fiber.StatusBadRequest, err.Error())
+    }
+
+    u.PasswordHash = helpers.StrPtr("")
+    return helpers.Success(c, u)
 }
 
 func (uc *UserControllerImpl) DeleteUser(c *fiber.Ctx) error {

@@ -11,4 +11,6 @@ type ProjectController interface {
 
     // Optional: if you still want subdomain resolution
     GetBySlug(c *fiber.Ctx) error
+
+    GetProjectActivity(ctx *fiber.Ctx) error
 }

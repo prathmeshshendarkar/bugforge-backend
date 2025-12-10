@@ -3,6 +3,8 @@ package routes
 import (
 	controllers "bugforge-backend/internal/http/controllers/interfaces"
 
+	commentws "bugforge-backend/internal/websocket/comments"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -14,6 +16,7 @@ func IssueRoutes(
 	attachmentCtrl controllers.IssueAttachmentController,
 	checklistCtrl controllers.IssueChecklistController,
 	subtaskCtrl controllers.IssueSubtaskController,
+	commentHub *commentws.CommentHub,
 ) {
 
 	r := router.Group("/issues")

@@ -8,4 +8,5 @@ import (
 type ActivityRepository interface {
 	Create(ctx context.Context, a *models.IssueActivity) error
 	ListByIssue(ctx context.Context, issueID string) ([]models.IssueActivity, error)
+	ListByProject(ctx context.Context, projectID string) ([]models.IssueActivity, error)
 }

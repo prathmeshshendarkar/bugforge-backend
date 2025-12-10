@@ -5,8 +5,14 @@ import (
 
 	"bugforge-backend/internal/config"
 	"bugforge-backend/internal/database"
+	"bugforge-backend/internal/events/handlers"
+
+	ws "bugforge-backend/internal/websocket"
+	commentws "bugforge-backend/internal/websocket/comments"
+	"bugforge-backend/internal/websocket/notifications"
 
 	pg "bugforge-backend/internal/repository/postgres"
+	kanbanrepo "bugforge-backend/internal/repository/postgres/KanbanPostgres"
 
 	"bugforge-backend/internal/service"
 
@@ -17,16 +23,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 
-	_ "bugforge-backend/docs"
-
-	ws "bugforge-backend/internal/websocket"
-
 	fiberSwagger "github.com/swaggo/fiber-swagger"
 )
 
 func main() {
 	cfg := config.Load()
 	db := database.Connect(cfg)
+
+	// WebSocket hubs
+	commentHub := commentws.NewCommentHub() // issue comments WS
+	hub := ws.NewHub()               // kanban WS
 
 	// -----------------------
 	// Repositories
@@ -37,19 +43,32 @@ func main() {
 	commentRepo := pg.NewCommentRepository(db)
 	activityRepo := pg.NewActivityRepository(db)
 	projectMemberRepo := pg.NewProjectMemberRepo(db)
-	kanbanRepo := pg.NewKanbanRepoPG(db)
+	kanbanRepo := kanbanrepo.NewKanbanRepo(db)
 	labelRepo := pg.NewLabelRepository(db)
+	notificationRepo := pg.NewNotificationRepoPG(db)
 
 	// -----------------------
 	// Services
 	// -----------------------
-	projectService := service.NewProjectService(projectRepo)
+	projectService := service.NewProjectService(projectRepo, activityRepo)
 	userService := service.NewUserService(userRepo, projectRepo, projectMemberRepo)
 	authService := service.NewAuthService(userRepo)
-	issueService := service.NewIssueService(issueRepo, projectRepo, userRepo, commentRepo, activityRepo)
+	activityService :=  service.NewActivityService(activityRepo);
+	
+	notifHub := notifications.NewNotificationHub()
+	go notifHub.Run()
+	notificationService := service.NewNotificationService(notificationRepo, userRepo, notifHub)
+
+	issueService := service.NewIssueService(
+		issueRepo, projectRepo, userRepo, commentRepo, activityRepo, activityService, commentHub, notificationService,
+	)
+
 	projectMemberService := service.NewProjectMemberService(projectRepo, userRepo, projectMemberRepo)
 	kanbanService := service.NewKanbanService(issueRepo, projectRepo, projectMemberRepo, kanbanRepo)
 	labelService := service.NewLabelService(labelRepo, projectRepo)
+	
+
+	handlers.RegisterNotificationHandlers(notificationService)
 
 	// -----------------------
 	// Controllers
@@ -58,7 +77,6 @@ func main() {
 	userController := controllers.NewUserController(userService)
 	authController := controllers.NewAuthController(authService, userService)
 
-	// Split issue controllers
 	issueController := controllers.NewIssueController(issueService)
 	issueCommentController := controllers.NewIssueCommentController(issueService)
 	issueRelationController := controllers.NewIssueRelationController(issueService)
@@ -69,16 +87,16 @@ func main() {
 	projectMemberController := controllers.NewProjectMemberController(projectMemberService)
 	projectLabelController := controllers.NewProjectLabelController(labelService)
 
+	notificationController := controllers.NewNotificationController(notificationService)
+
+
 	// -----------------------
-	// Fiber app + WS Hub
+	// Fiber App
 	// -----------------------
 	app := fiber.New()
-	hub := ws.NewHub()
 
-	// Swagger
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
-	// API Root (CORS applied)
 	api := app.Group("/api", cors.New(cors.Config{
 		AllowOrigins:     "http://localhost:5173",
 		AllowCredentials: true,
@@ -86,21 +104,21 @@ func main() {
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS,PATCH",
 	}))
 
-	// Public Auth Routes
+	// Public
 	authPublic := api.Group("/auth")
 	routes.AuthRoutes(authPublic, authController)
 
-	// Protected Auth Routes
+	// Auth Protected
 	authProtected := api.Group("/auth")
 	authProtected.Use(mw.JWTProtected())
 	routes.AuthProtectedRoutes(authProtected, authController)
 
-	// Protected API Routes
+	// Protected
 	protected := api.Use(mw.JWTProtected())
 
 	routes.ProjectRoutes(protected, projectController, issueController, projectMemberController, projectLabelController)
 
-	// NEW ISSUE ROUTE WIRING
+	// Issue routes (with WS)
 	routes.IssueRoutes(
 		protected,
 		issueController,
@@ -109,16 +127,21 @@ func main() {
 		issueAttachmentController,
 		issueChecklistController,
 		issueSubtaskController,
+		commentHub,
 	)
 
 	routes.UserRoutes(protected, userController)
 
-	// Kanban
+	// Kanban WS
 	routes.RegisterKanbanRoutes(protected, kanbanService, hub)
 
-	// WebSocket Routes (no CORS)
+	routes.NotificationRoutes(protected, notificationController)
+
+	// Global WS routes
 	wsGroup := app.Group("/ws")
 	routes.RegisterWebSocketRoutes(wsGroup, hub)
+	routes.RegisterIssueCommentWS(wsGroup, commentHub)
+	routes.RegisterNotificationWSRoutes(wsGroup, notifHub)
 
 	// Health
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -126,7 +149,5 @@ func main() {
 	})
 
 	log.Println("BugForge server running on :8080")
-	if err := app.Listen(":8080"); err != nil {
-		log.Fatal(err)
-	}
+	log.Fatal(app.Listen(":8080"))
 }

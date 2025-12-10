@@ -24,6 +24,9 @@ func ProjectRoutes(router fiber.Router,
 	// Project-specific issue listing
 	r.Get("/:project_id/issues", ic.ListByProject)
 
+	// PROJECT ACTIVITY FEED
+	r.Get("/:project_id/activity", pc.GetProjectActivity)
+
 	// ---- NEW: Project Members ----
 	m := r.Group("/:project_id/members")
 	

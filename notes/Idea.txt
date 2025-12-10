@@ -1,0 +1,36 @@
+BugForge Main Idea
+
+New Customer -> Lets create one super admin role with the customer/client name -> That super admin can create subdomains for every project he/she creates -> Now subdomains does not mean actual DNS Subdomains, It is just a way t map projects to a client. The subdomains will be mapped in DB -> So basically, whenever someone logs in, if they are mapped to a project the user belongs there as per role we will direct them to that project -> If user is admin we will direct them to dashboard with all the projects that are present -> If the admin belonging to that project will be able to create user and provide roles for that project and map the project as well to that user
+
+Roles : Super Admin, Admin, Client(Project per se client), Developer,  Tester, Project Manager ... etc any other roles.
+
+In here, customer and client is different. A customer is like that company(For example Acme) and client is like clients belonging to that customer(For example axis bank client belonging to acme). Example within our case In our company(ACC) We are the customer now for this portal, whereas we have multiple clients (Axis, HDFC, Bandhan). Now each client is isolated to its project, so basically Axis will be redirect to there project, and within that projects we have other roles like developer, tester, pm, etc.
+
+Fix UI components to fully adopt the new status list (in_progress)
+2️⃣ Implement Labels UI next
+3️⃣ Implement Relations UI next
+4️⃣ Implement Attachments (with upload) UI next
+5️⃣ Implement Checklists / Subtasks
+
+Pick one — or say "ALL".
+
+A. Labels (complete UI code)
+B. Relations
+C. Attachments (with upload logic)
+D. Checklists
+E. Subtasks
+F. All bundled together in one giant IssueDrawer overhaul
+
+Pick A, B, C, D, E or F.
+
+Want me to add:
+
+Delete confirmation modal
+
+Animate reorder with framer-motion
+
+Checkbox strike-through text
+
+Group checklist summary (like “3/10 complete”)
+
+Just say "Checklist polish next".
